@@ -1,0 +1,40 @@
+---
+description: Guidelines for authoring OpenBot plugins using the @meetopenbot/plugin-sdk.
+globs: src/**/*.ts
+---
+
+# OpenBot Plugin Authoring Rules
+
+When building plugins for OpenBot using the `@meetopenbot/plugin-sdk`, follow these patterns and constraints.
+
+## Plugin Structure
+
+- Every plugin should be defined with `definePlugin` and export a `Plugin` or `PluginModule` object.
+- Use the `factory` function to set up event handlers on the `PluginBuilder`.
+- Access `agentId`, `config`, `storage`, and `tools` from the `PluginContext`.
+
+## Event Handling
+
+- **`agent:invoke`**: Always use `shouldHandleInvoke(event, context.agentId)` to check if the event is intended for the current agent before processing it.
+- **`agent:output`**: Use the `agentOutput` helper to send messages back to the user. Ensure you preserve the `threadId` from the triggering event.
+- **Tool Actions**: Tool handlers should listen for `action:<toolName>` and emit `action:<toolName>:result` using the `toolResult` helper.
+- **Metadata**: Use `withMeta` to preserve event metadata (like `threadId` or `toolCallId`) when emitting new events based on received ones.
+
+## Storage Usage
+
+- Use `context.storage` for all persistence needs.
+- Prefer `appendMemory` and `listMemories` for long-term agent memory.
+- Use `patchThreadState` or `patchChannelState` for ephemeral state management.
+
+## UI Widgets
+
+- Use the `uiWidget` helper to send `client:ui:widget` events.
+- Define widget specs using the types in `src/ui.ts` (e.g., `UIFormWidget`, `UIChoiceWidget`).
+- Listen for `client:ui:widget:response` to handle user interactions with widgets.
+
+## Best Practices
+
+- **Validation**: Use `zod` (exported as `z` from the SDK) to validate plugin configuration in `configSchema`.
+- **Typing**: Leverage the provided TypeScript interfaces for all event payloads and storage objects.
+- **Error Handling**: Wrap event handlers in try-catch blocks and emit error messages or log them appropriately.
+- **Context Preservation**: Always pass `threadId` in event metadata to ensure messages are routed to the correct conversation thread.

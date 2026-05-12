@@ -1,0 +1,31 @@
+{
+  "name": "@meetopenbot/plugin-sdk",
+  "version": "0.1.0",
+  "description": "Types and helpers for building OpenBot plugins on the event bus.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "melony": "^0.3.7",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "melony": "^0.3.7",
+    "typescript": "^5.0.0",
+    "zod": "^4.3.5",
+    "@types/node": "^20.0.0"
+  }
+}
