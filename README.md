@@ -10,51 +10,55 @@ npm install @meetopenbot/plugin-sdk
 
 ## How it Works
 
-OpenBot plugins operate on an event-driven architecture powered by [Melony](https://github.com/meetopenbot/melony). 
+OpenBot plugins operate on an event-driven architecture powered by [Melony](https://github.com/meetopenbot/melony). Plugin authors work with the OpenBot SDK types and helpers; you do not need to import Melony types in your plugin code.
 
-1.  **Registration**: The host loads your plugin and calls the `factory` function with a `PluginContext`.
-2.  **Subscription**: Your `factory` function uses the `MelonyBuilder` to subscribe to specific events (e.g., `agent:invoke`).
-3.  **Processing**: When an event occurs, your handler is called. You can perform logic, interact with `storage`, or call external APIs.
-4.  **Publication**: Your handler can publish new events back to the bus (e.g., `agent:output` or `client:ui:widget`) to communicate with the user or other plugins.
+1. **Registration**: The host loads your plugin and calls the `factory` function with a `PluginContext`.
+2. **Subscription**: Your `factory` function uses the `PluginBuilder` to subscribe to specific events (for example, `agent:invoke`).
+3. **Processing**: When an event occurs, your handler is called. You can perform logic, interact with `storage`, or call external APIs.
+4. **Publication**: Your handler can emit new events back to the bus (for example, `agent:output` or `client:ui:widget`) to communicate with the user or other plugins.
 
 ## Core Concepts
 
 ### Plugin
 
-A plugin is defined by the `Plugin` interface. It requires an `id`, `name`, `description`, and a `factory` function.
+A plugin is defined by the `Plugin` or `PluginModule` interface. Use `definePlugin` to get full OpenBot typing without annotating Melony types yourself.
 
 ```typescript
-import { Plugin, PluginContext, MelonyPlugin, OpenBotState, OpenBotEvent } from '@meetopenbot/plugin-sdk';
+import { definePlugin } from '@meetopenbot/plugin-sdk';
 
-export const myPlugin: Plugin = {
+export default definePlugin({
   id: 'my-plugin',
   name: 'My Plugin',
   description: 'A simple example plugin',
   configSchema: {
     type: 'object',
     properties: {
-      apiKey: { type: 'string', description: 'Your API Key', format: 'password' }
+      apiKey: { type: 'string', description: 'Your API Key', format: 'password' },
     },
-    required: ['apiKey']
+    required: ['apiKey'],
   },
   toolDefinitions: {
-    'get_weather': {
+    get_weather: {
       description: 'Get the current weather',
       inputSchema: {
         type: 'object',
         properties: {
-          location: { type: 'string' }
-        }
-      }
-    }
+          location: { type: 'string' },
+        },
+      },
+    },
   },
-  factory: (context: PluginContext): MelonyPlugin<OpenBotState, OpenBotEvent> => {
-    return (builder) => {
+  factory: (context) => (builder) => {
+    builder.on('agent:invoke', async function* (event) {
       // Handle events here
-    };
+    });
   },
-};
+});
 ```
+
+For community plugins published as npm packages, omit `id` and export a `PluginModule`. The host assigns `id` from the package name.
+
+You can also type a plugin object explicitly with `Plugin` or `PluginModule` if you prefer. The `factory` function returns a `PluginFactory`, which registers handlers on the `PluginBuilder` and receives `PluginHandlerContext` in event handlers.
 
 ### Configuration & Tools
 
@@ -95,29 +99,30 @@ Plugins can render interactive UI widgets using the `uiWidget` helper. Supported
 This plugin responds to any message with "Hello, World!".
 
 ```typescript
-import { Plugin, shouldHandleInvoke, agentOutput } from '@meetopenbot/plugin-sdk';
+import { definePlugin, shouldHandleInvoke, agentOutput } from '@meetopenbot/plugin-sdk';
 
-export const helloWorldPlugin: Plugin = {
+export default definePlugin({
   id: 'hello-world',
   name: 'Hello World',
   description: 'Responds with Hello World',
   factory: (context) => (builder) => {
-    builder.on('agent:invoke', async (event, { bus }) => {
+    builder.on('agent:invoke', async function* (event) {
       if (shouldHandleInvoke(event, context.agentId)) {
-        await bus.publish(agentOutput({
+        yield agentOutput({
           agentId: context.agentId,
           content: 'Hello, World!',
           threadId: event.meta?.threadId,
-        }));
+        });
       }
     });
   },
-};
+});
 ```
 
 ## API Reference
 
 - [Plugin & Context](./src/plugin.ts)
+- [Runtime Types](./src/runtime.ts)
 - [Events & State](./src/events.ts)
 - [Storage Interface](./src/storage.ts)
 - [UI Widget Specs](./src/ui.ts)
