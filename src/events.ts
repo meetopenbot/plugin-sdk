@@ -1,5 +1,5 @@
 import type { AgentDetails, ChannelDetails, ThreadDetails } from './storage.js';
-import type { UIWidgetSpec } from './ui.js';
+import type { RenderUIWidgetData, UIWidgetSpec } from './ui.js';
 
 export type EventMeta = {
   agentId?: string;
@@ -35,7 +35,7 @@ export type AgentOutputEvent = BaseEvent & {
 
 export type UIWidgetEvent = BaseEvent & {
   type: 'client:ui:widget';
-  data: UIWidgetSpec;
+  data: RenderUIWidgetData;
   meta: EventMeta & {
     agentId: string;
   };

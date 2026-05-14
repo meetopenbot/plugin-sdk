@@ -5,7 +5,7 @@ import type {
   ToolResultEvent,
   UIWidgetEvent,
 } from './events.js';
-import type { UIWidgetSpec } from './ui.js';
+import type { RenderUIWidgetData, UIWidgetSpec } from './ui.js';
 
 /** Return true when this agent should handle an `agent:invoke` event. */
 export function shouldHandleInvoke(event: AgentInvokeEvent, agentId: string): boolean {
@@ -47,7 +47,7 @@ export function toolResult<TData>(
 /** Build a `client:ui:widget` event. */
 export function uiWidget(args: {
   agentId: string;
-  widget: UIWidgetSpec;
+  widget: RenderUIWidgetData;
   threadId?: string;
   meta?: EventMeta;
 }): UIWidgetEvent {

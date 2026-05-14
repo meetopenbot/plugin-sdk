@@ -21,7 +21,22 @@ export type UIWidgetListItem = {
   id: string;
   label: string;
   description?: string;
+  /** URL for a thumbnail or an icon name */
+  image?: string;
+  /** Optional badge text (e.g., "New", "Sale", "10") */
+  badge?: string;
+  /** Actions specific to this list item */
+  actions?: UIWidgetAction[];
   status?: 'pending' | 'in_progress' | 'done' | 'error' | 'cancelled';
+  metadata?: Record<string, unknown>;
+};
+
+export type UIMediaItem = {
+  type: 'image' | 'video' | 'audio' | 'file';
+  url: string;
+  title?: string;
+  alt?: string;
+  thumbnailUrl?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -29,18 +44,24 @@ export type UIWidgetBase = {
   widgetId: string;
   title?: string;
   description?: string;
-  body?: string;
+  /** Optional hero media for the widget */
+  media?: UIMediaItem;
+  /** Optional actions for the widget */
+  actions?: UIWidgetAction[];
   state?: 'open' | 'submitted' | 'cancelled' | 'error';
+  display?: 'expanded' | 'collapsed';
+  size?: 'small' | 'medium' | 'large' | 'full';
   metadata?: Record<string, unknown>;
 };
 
 export type UIMessageWidget = UIWidgetBase & {
   kind: 'message';
-  actions?: UIWidgetAction[];
+  body?: string;
 };
 
 export type UIChoiceWidget = UIWidgetBase & {
   kind: 'choice';
+  /** Choice widgets require at least one action */
   actions: UIWidgetAction[];
 };
 
@@ -48,26 +69,29 @@ export type UIFormWidget = UIWidgetBase & {
   kind: 'form';
   fields: UIWidgetField[];
   submitLabel?: string;
-  actions?: UIWidgetAction[];
 };
 
 export type UIListWidget = UIWidgetBase & {
   kind: 'list';
   items: UIWidgetListItem[];
-  actions?: UIWidgetAction[];
 };
 
-export type UIWidgetSpec = UIMessageWidget | UIChoiceWidget | UIFormWidget | UIListWidget;
+export type UIMediaWidget = UIWidgetBase & {
+  kind: 'media';
+  items: UIMediaItem[];
+  layout?: 'single' | 'grid' | 'carousel';
+};
+
+export type UIWidgetSpec =
+  | UIMessageWidget
+  | UIChoiceWidget
+  | UIFormWidget
+  | UIListWidget
+  | UIMediaWidget;
 
 export type RenderUIWidgetData =
   | (Omit<UIMessageWidget, 'widgetId'> & { widgetId?: string })
   | (Omit<UIChoiceWidget, 'widgetId'> & { widgetId?: string })
   | (Omit<UIFormWidget, 'widgetId'> & { widgetId?: string })
   | (Omit<UIListWidget, 'widgetId'> & { widgetId?: string })
-  | {
-      kind: 'approval' | 'todo_list';
-      widgetId?: string;
-      title?: string;
-      props?: Record<string, unknown>;
-      metadata?: Record<string, unknown>;
-    };
+  | (Omit<UIMediaWidget, 'widgetId'> & { widgetId?: string });
