@@ -8,6 +8,8 @@ The official SDK for building plugins for [OpenBot](https://meetopenbot.com). Th
 npm install @meetopenbot/plugin-sdk
 ```
 
+OpenBot plugins **must** be **ESM** (ECMAScript modules): `import` / `export` in the plugin entry, with a package configured as a module (for example `"type": "module"` in `package.json`, or an `.mjs` entry). This is the standard for OpenBot plugins; CommonJS (`require`) is not supported.
+
 ## How it Works
 
 OpenBot plugins operate on an event-driven architecture powered by [Melony](https://github.com/meetopenbot/melony). Plugin authors work with the OpenBot SDK types and helpers; you do not need to import Melony types in your plugin code.
