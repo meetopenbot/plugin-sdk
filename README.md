@@ -15,7 +15,7 @@ OpenBot plugins operate on an event-driven architecture powered by [Melony](http
 1. **Registration**: The host loads your plugin and calls the `factory` function with a `PluginContext`.
 2. **Subscription**: Your `factory` function uses the `PluginBuilder` to subscribe to specific events (for example, `agent:invoke`).
 3. **Processing**: When an event occurs, your handler is called. You can perform logic, interact with `storage`, or call external APIs.
-4. **Publication**: Your handler can emit new events back to the bus (for example, `agent:output` or `client:ui:widget`) to communicate with the user or other plugins.
+4. **Publication**: Your handler can emit new events back to the bus (for example, `agent:output` or `client:ui:widget` or `client:ui:widget:response`) to communicate with the user or other plugins.
 
 ## Core Concepts
 
@@ -72,8 +72,20 @@ Plugins communicate via an event bus. Common event types include:
 - `agent:invoke`: Dispatched when a user sends a message to the agent.
 - `agent:output`: Emitted by the agent to send a message back to the user.
 - `client:ui:widget`: Used to render a UI widget in the client.
+- `client:ui:widget:response`: Response from interactive widgets like choice, form etc...
 - `action:<toolName>`: Dispatched when a runtime requests a tool call.
 - `action:<toolName>:result`: Emitted when a tool handler finishes.
+
+### Agent kind plugins
+
+An **agent kind** plugin is one where your plugin acts as the **agent runtime**. It can subscribe to the full event surface the OpenBot bus exposes (for example `agent:invoke`, `agent:output`, `action:<toolName>` / `action:<toolName>:result`, `client:ui:widget`, and `client:ui:widget:response`). For this pattern, the agent's lifecycle effectively **starts on `agent:invoke`** when the user's turn enters the system; from there you run your loop, emit outputs, drive tools, and render widgets like any other plugin.
+
+Agent kind plugins are aimed at **AI agent behavior**, not only thin translation layers. How you implement that behavior usually falls into one of two paths:
+
+1. **Vendor agent harness**: Use a product or platform that already ships a **ready-made agent stack** (harness, built-in context, tools, and guardrails). Examples include offerings such as the Claude Agent SDK, Stitch, Firecrawl agent SDK, Jules, Codex, and similar "full agent" SDKs. You embed or wrap that harness and connect it to OpenBot via this SDK's events and helpers (`agentOutput`, `toolResult`, `uiWidget`, storage, and so on).
+2. **Custom harness**: When the integration target **does not** provide a full agent harness (only an API or a narrower SDK), you typically **build the agent loop yourself**, preferably with an **AI SDK** (for example the [Vercel AI SDK](https://sdk.vercel.ai/docs)) together with that product's official client or HTTP API.
+
+**Output and widgets**: OpenBot is oriented toward **complete messages**, not streaming raw text deltas. Emit **full step text or final text** through **`agent:output`** as your agent progresses. A single plugin may send **more than one** `agent:output` in a turn; there is no requirement to cap it at one. For **tool calls and results**, surface them in the UI with a **collapsible message widget** (or, when it fits the UX better, a richer widget such as **list**, **media** for images and similar assets, **form**, or **choice**).
 
 ### Storage
 
@@ -93,6 +105,7 @@ Plugins can render interactive UI widgets using the `uiWidget` helper. Supported
 - `choice`: A set of buttons for the user to choose from.
 - `form`: A form with various field types (text, number, select, etc.).
 - `list`: A list of items with status indicators.
+- `media`: Images, video, audio, or files in a single-item, grid, or carousel layout.
 
 ## Example: Hello World Plugin
 
