@@ -1,6 +1,6 @@
 {
   "name": "@meetopenbot/plugin-sdk",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Types and helpers for building OpenBot plugins on the event bus.",
   "type": "module",
   "main": "./dist/index.js",

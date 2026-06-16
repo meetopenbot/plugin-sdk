@@ -9,7 +9,7 @@ export type UIWidgetAction = {
 export type UIWidgetField = {
   id: string;
   label: string;
-  type: 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'multiselect' | 'date';
+  type: 'text' | 'textarea' | 'number' | 'boolean' | 'select' | 'multiselect' | 'date' | 'password';
   description?: string;
   placeholder?: string;
   required?: boolean;
@@ -52,6 +52,7 @@ export type UIWidgetBase = {
   display?: 'expanded' | 'collapsed';
   size?: 'small' | 'medium' | 'large' | 'full';
   metadata?: Record<string, unknown>;
+  variant: "default" | "basic",
 };
 
 export type UIMessageWidget = UIWidgetBase & {

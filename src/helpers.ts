@@ -5,7 +5,7 @@ import type {
   ToolResultEvent,
   UIWidgetEvent,
 } from './events.js';
-import type { RenderUIWidgetData, UIWidgetSpec } from './ui.js';
+import type { RenderUIWidgetData, } from './ui.js';
 
 /** Return true when this agent should handle an `agent:invoke` event. */
 export function shouldHandleInvoke(event: AgentInvokeEvent, agentId: string): boolean {
