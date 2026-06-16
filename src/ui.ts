@@ -52,7 +52,7 @@ export type UIWidgetBase = {
   display?: 'expanded' | 'collapsed';
   size?: 'small' | 'medium' | 'large' | 'full';
   metadata?: Record<string, unknown>;
-  variant: "default" | "basic",
+  variant?: "default" | "basic",
 };
 
 export type UIMessageWidget = UIWidgetBase & {
