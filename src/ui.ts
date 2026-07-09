@@ -27,7 +27,10 @@ export type UIWidgetListItem = {
   badge?: string;
   /** Actions specific to this list item */
   actions?: UIWidgetAction[];
-  status?: 'pending' | 'in_progress' | 'done' | 'error' | 'cancelled';
+  /** Optional status label shown on the item (e.g. "Pending", "Shipped") */
+  status?: string;
+  /** Optional semantic hint for status coloring in the client */
+  statusVariant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   metadata?: Record<string, unknown>;
 };
 
