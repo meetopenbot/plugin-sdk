@@ -20,6 +20,7 @@ export type ConfigSchema = {
       minimum?: number;
       maximum?: number;
       format?: 'password' | 'url' | 'email';
+      override?: boolean
     };
   };
   required?: string[];
