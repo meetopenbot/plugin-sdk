@@ -4,13 +4,18 @@ import type {
   EventMeta,
   ToolResultEvent,
   UIWidgetEvent,
-} from './events.js';
-import type { RenderUIWidgetData, } from './ui.js';
+  WebhookEvent,
+  WebhookHttpResponseEvent,
+} from "./events.js";
+import type { RenderUIWidgetData } from "./ui.js";
 
 /** Return true when this agent should handle an `agent:invoke` event. */
-export function shouldHandleInvoke(event: AgentInvokeEvent, agentId: string): boolean {
+export function shouldHandleInvoke(
+  event: AgentInvokeEvent,
+  agentId: string,
+): boolean {
   const routedTo = event.data?.agentId;
-  return !(typeof routedTo === 'string' && routedTo && routedTo !== agentId);
+  return !(typeof routedTo === "string" && routedTo && routedTo !== agentId);
 }
 
 /** Build an `agent:output` event. */
@@ -21,7 +26,7 @@ export function agentOutput(args: {
   meta?: EventMeta;
 }): AgentOutputEvent {
   return {
-    type: 'agent:output',
+    type: "agent:output",
     data: { content: args.content },
     meta: {
       ...(args.meta ?? {}),
@@ -52,7 +57,7 @@ export function uiWidget(args: {
   meta?: EventMeta;
 }): UIWidgetEvent {
   return {
-    type: 'client:ui:widget',
+    type: "client:ui:widget",
     data: args.widget,
     meta: {
       ...(args.meta ?? {}),
@@ -74,5 +79,33 @@ export function withMeta<T extends { meta?: EventMeta }>(
       ...source.meta,
       ...(event.meta ?? {}),
     },
+  };
+}
+
+/** Decode `action:webhook` raw body bytes from base64. */
+export function decodeWebhookRawBody(event: WebhookEvent): Buffer {
+  return Buffer.from(event.data.rawBody, "base64");
+}
+
+/** Read a single header value from a webhook event (case-insensitive). */
+export function getWebhookHeader(
+  event: WebhookEvent,
+  name: string,
+): string | undefined {
+  const headers = event.data.headers;
+  const direct = headers[name] ?? headers[name.toLowerCase()];
+  if (Array.isArray(direct)) return direct[0];
+  return typeof direct === "string" ? direct : undefined;
+}
+
+/** Build an `action:webhook:http-response` event for the host HTTP reply. */
+export function webhookHttpResponse(args: {
+  status: number;
+  body?: unknown;
+  headers?: Record<string, string>;
+}): WebhookHttpResponseEvent {
+  return {
+    type: "action:webhook:http-response",
+    data: args,
   };
 }

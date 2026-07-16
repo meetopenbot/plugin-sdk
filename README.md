@@ -26,21 +26,25 @@ OpenBot plugins operate as the **agent runtime** on an event-driven architecture
 A plugin is defined by the `Plugin` or `PluginModule` interface. Use `definePlugin` to get full OpenBot typing.
 
 ```typescript
-import { definePlugin } from '@meetopenbot/plugin-sdk';
+import { definePlugin } from "@meetopenbot/plugin-sdk";
 
 export default definePlugin({
-  id: 'my-agent',
-  name: 'My Agent',
-  description: 'A custom AI agent',
+  id: "my-agent",
+  name: "My Agent",
+  description: "A custom AI agent",
   configSchema: {
-    type: 'object',
+    type: "object",
     properties: {
-      apiKey: { type: 'string', description: 'Your API Key', format: 'password' },
+      apiKey: {
+        type: "string",
+        description: "Your API Key",
+        format: "password",
+      },
     },
-    required: ['apiKey'],
+    required: ["apiKey"],
   },
   factory: (context) => (builder) => {
-    builder.on('agent:invoke', async function* (event) {
+    builder.on("agent:invoke", async function* (event) {
       // Handle agent logic here
     });
   },
@@ -57,6 +61,81 @@ Plugins communicate via an event bus. Core events include:
 - `client:ui:widget:response`: Dispatched when a user interacts with a widget (e.g., submits a form or clicks a choice).
 - `action:<toolName>`: Dispatched when a tool call is requested.
 - `action:<toolName>:result`: Emitted when a tool handler finishes. Must include `data.output: string` to be fed back to the model.
+- `action:webhook`: Dispatched when a third-party provider POSTs to `/api/webhooks/:provider`.
+- `action:webhook:http-response`: Yield from a webhook handler to control the HTTP response (challenges, acks, errors).
+
+### Inbound webhooks
+
+The OpenBot host exposes `POST /api/webhooks/:provider` for third-party integrations (Slack, Linear, GitHub, etc.). The route is intentionally thin: it forwards the request onto the event bus and lets **existing plugins** handle verification, transforms, and HTTP responses.
+
+**Host behavior:**
+
+1. Preserves the **raw request body** (base64 in the event) for HMAC signature checks.
+2. Dispatches `action:webhook` to the `system` agent on the `uncategorized` channel.
+3. **Awaits** the plugin run and uses the first `action:webhook:http-response` yield as the HTTP reply (defaults to `200 {}`).
+4. Fans out subsequent events (`agent:invoke`, etc.) over SSE like `/api/publish`.
+
+**Plugin responsibilities:**
+
+- Filter on `event.data.provider` (matches the `:provider` URL segment).
+- Verify signatures using `event.data.headers` and `decodeWebhookRawBody(event)`.
+- Yield `webhookHttpResponse(...)` for URL challenges, 401s, or custom acks.
+- Transform into normal bus events (typically `agent:invoke`).
+
+```typescript
+import {
+  definePlugin,
+  decodeWebhookRawBody,
+  getWebhookHeader,
+  webhookHttpResponse,
+  type WebhookEvent,
+} from "@meetopenbot/plugin-sdk";
+
+export default definePlugin({
+  name: "Slack",
+  description: "Inbound Slack Events API webhooks",
+  configSchema: {
+    type: "object",
+    properties: {
+      signingSecret: {
+        type: "string",
+        description: "Slack signing secret",
+        format: "password",
+      },
+    },
+    required: ["signingSecret"],
+  },
+  factory:
+    ({ config }) =>
+    (builder) => {
+      builder.on("action:webhook", async function* (event) {
+        const webhook = event as WebhookEvent;
+        if (webhook.data.provider !== "slack") return;
+
+        const rawBody = decodeWebhookRawBody(webhook);
+        const payload = JSON.parse(rawBody.toString("utf8"));
+
+        if (payload.type === "url_verification") {
+          yield webhookHttpResponse({
+            status: 200,
+            body: { challenge: payload.challenge },
+          });
+          return;
+        }
+
+        // verify signature, then ack + transform...
+        yield webhookHttpResponse({ status: 200, body: {} });
+        yield {
+          type: "agent:invoke",
+          data: { role: "user", content: payload.event?.text ?? "" },
+          meta: { threadId: payload.event?.thread_ts ?? payload.event?.ts },
+        };
+      });
+    },
+});
+```
+
+Register the plugin on your webhook agent (usually `system`) in `AGENT.md`, then point the provider at `https://<host>/api/webhooks/slack`.
 
 ### Output and Communication
 
@@ -96,18 +175,22 @@ Plugins can render interactive UI widgets using the `uiWidget` helper and handle
 This agent responds to any message with "Hello, World!".
 
 ```typescript
-import { definePlugin, shouldHandleInvoke, agentOutput } from '@meetopenbot/plugin-sdk';
+import {
+  definePlugin,
+  shouldHandleInvoke,
+  agentOutput,
+} from "@meetopenbot/plugin-sdk";
 
 export default definePlugin({
-  id: 'hello-world',
-  name: 'Hello World',
-  description: 'Responds with Hello World',
+  id: "hello-world",
+  name: "Hello World",
+  description: "Responds with Hello World",
   factory: (context) => (builder) => {
-    builder.on('agent:invoke', async function* (event) {
+    builder.on("agent:invoke", async function* (event) {
       if (shouldHandleInvoke(event, context.agentId)) {
         yield agentOutput({
           agentId: context.agentId,
-          content: 'Hello, World!',
+          content: "Hello, World!",
           threadId: event.meta?.threadId,
         });
       }
@@ -122,7 +205,7 @@ export default definePlugin({
 - [Events & State](./src/events.ts)
 - [Storage Interface](./src/storage.ts)
 - [UI Widget Specs](./src/ui.ts)
-- [Helpers](./src/helpers.ts)
+- [Helpers](./src/helpers.ts) (`decodeWebhookRawBody`, `getWebhookHeader`, `webhookHttpResponse`)
 
 ## License
 

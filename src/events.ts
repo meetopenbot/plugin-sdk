@@ -1,5 +1,5 @@
-import type { AgentDetails, ChannelDetails, ThreadDetails } from './storage.js';
-import type { RenderUIWidgetData, UIWidgetSpec } from './ui.js';
+import type { AgentDetails, ChannelDetails, ThreadDetails } from "./storage.js";
+import type { RenderUIWidgetData, UIWidgetSpec } from "./ui.js";
 
 export type EventMeta = {
   agentId?: string;
@@ -15,16 +15,16 @@ export type BaseEvent = {
 };
 
 export type AgentInvokeEvent = BaseEvent & {
-  type: 'agent:invoke';
+  type: "agent:invoke";
   data: {
-    role?: 'user' | 'assistant' | 'system';
+    role?: "user" | "assistant" | "system";
     content: string;
     agentId?: string;
   };
 };
 
 export type AgentOutputEvent = BaseEvent & {
-  type: 'agent:output';
+  type: "agent:output";
   data: {
     content: string;
   };
@@ -34,7 +34,7 @@ export type AgentOutputEvent = BaseEvent & {
 };
 
 export type UIWidgetEvent = BaseEvent & {
-  type: 'client:ui:widget';
+  type: "client:ui:widget";
   data: RenderUIWidgetData;
   meta: EventMeta & {
     agentId: string;
@@ -42,7 +42,7 @@ export type UIWidgetEvent = BaseEvent & {
 };
 
 export type UIWidgetResponseEvent = BaseEvent & {
-  type: 'client:ui:widget:response';
+  type: "client:ui:widget:response";
   data: {
     widgetId: string;
     actionId: string;
@@ -65,6 +65,31 @@ export type ToolResultEvent<TData = unknown> = BaseEvent & {
   meta?: EventMeta;
 };
 
+/** Inbound third-party webhook forwarded from `POST /api/webhooks/:provider`. */
+export type WebhookEvent = BaseEvent & {
+  type: "action:webhook";
+  data: {
+    provider: string;
+    /** Request body encoded as base64 so plugins can verify HMACs on the raw bytes. */
+    rawBody: string;
+    headers: Record<string, string | string[] | undefined>;
+    query: Record<string, unknown>;
+  };
+};
+
+/**
+ * Yield this from a webhook handler to control the HTTP response
+ * (URL challenges, signature failures, provider-specific acks).
+ */
+export type WebhookHttpResponseEvent = BaseEvent & {
+  type: "action:webhook:http-response";
+  data: {
+    status: number;
+    body?: unknown;
+    headers?: Record<string, string>;
+  };
+};
+
 /**
  * Narrow event union for common plugin authoring paths.
  * The host bus accepts additional event types at runtime.
@@ -75,15 +100,17 @@ export type PluginEvent =
   | UIWidgetEvent
   | UIWidgetResponseEvent
   | ToolActionEvent
-  | ToolResultEvent;
+  | ToolResultEvent
+  | WebhookEvent
+  | WebhookHttpResponseEvent;
 
 export type OpenBotEvent = PluginEvent | (BaseEvent & { data?: unknown });
 
 export type ShortTermMessage =
-  | { role: 'system'; content: string }
-  | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string; toolCalls?: unknown[] }
-  | { role: 'tool'; content: string; toolCallId: string; toolName: string };
+  | { role: "system"; content: string }
+  | { role: "user"; content: string }
+  | { role: "assistant"; content: string; toolCalls?: unknown[] }
+  | { role: "tool"; content: string; toolCallId: string; toolName: string };
 
 /** Runtime state available on Melony handler contexts. */
 export interface OpenBotState {
