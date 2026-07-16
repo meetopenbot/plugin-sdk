@@ -8,20 +8,30 @@ export interface PluginRef {
   config?: Record<string, unknown>;
 }
 
+/** Scalar JSON types used in `configSchema` property definitions. */
+export type ConfigSchemaScalarType = 'string' | 'number' | 'boolean' | 'integer';
+
+/** JSON-schema-like description of a single config field. */
+export type ConfigSchemaProperty = {
+  type: ConfigSchemaScalarType | 'array' | 'object';
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  items?: {
+    type: ConfigSchemaScalarType;
+  };
+  minimum?: number;
+  maximum?: number;
+  format?: 'password' | 'url' | 'email';
+  /** When true, the field may be overridden per `agent:invoke` from the composer. */
+  override?: boolean;
+};
+
 /** JSON-schema-like description of per-plugin config in AGENT.md. */
 export type ConfigSchema = {
   type: 'object';
   properties: {
-    [key: string]: {
-      type: 'string' | 'number' | 'boolean' | 'integer';
-      description?: string;
-      default?: unknown;
-      enum?: unknown[];
-      minimum?: number;
-      maximum?: number;
-      format?: 'password' | 'url' | 'email';
-      override?: boolean
-    };
+    [key: string]: ConfigSchemaProperty;
   };
   required?: string[];
 };
